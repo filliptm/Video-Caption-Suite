@@ -97,12 +97,19 @@ onMounted(() => {
     </div>
 
     <!-- Tab content with scroll constraint -->
-    <div class="min-h-[200px] max-h-[50vh] overflow-y-auto -mx-4 px-4">
+    <div
+      :class="[
+        '-mx-4 px-4',
+        activeTab === 'prompt'
+          ? 'flex-1 flex flex-col min-h-0'
+          : 'min-h-[200px] max-h-[50vh] overflow-y-auto'
+      ]"
+    >
       <DirectorySettings v-if="activeTab === 'directory'" />
       <ModelSettings v-if="activeTab === 'model'" />
       <InferenceSettings v-if="activeTab === 'inference'" />
       <OptimizationSettings v-if="activeTab === 'optimization'" />
-      <PromptSettings v-if="activeTab === 'prompt'" />
+      <PromptSettings v-if="activeTab === 'prompt'" class="flex-1 min-h-0" />
     </div>
   </BaseCard>
 </template>

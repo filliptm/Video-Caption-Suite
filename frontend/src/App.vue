@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useWebSocket, useApi, useResizable } from '@/composables'
 import { useVideoStore } from '@/stores/videoStore'
@@ -45,6 +45,30 @@ const {
 const processingVideoName = computed(() => {
   return isProcessing.value ? state.value.current_video : null
 })
+
+// Watch for video completion during processing
+// When current_video changes, the previous video has completed
+watch(
+  () => state.value.current_video,
+  (newVideo, oldVideo) => {
+    // If we were processing a video and now moved to a different one (or null),
+    // the old video completed successfully
+    if (oldVideo && isProcessing.value && newVideo !== oldVideo) {
+      videoStore.markVideoAsCaptioned(oldVideo)
+    }
+  }
+)
+
+// Watch for processing completion to mark the final video
+watch(
+  () => isComplete.value,
+  (nowComplete, wasComplete) => {
+    // When processing just completed, mark the last video as captioned
+    if (nowComplete && !wasComplete && state.value.current_video) {
+      videoStore.markVideoAsCaptioned(state.value.current_video)
+    }
+  }
+)
 
 // Selection helpers
 function isSelected(name: string): boolean {

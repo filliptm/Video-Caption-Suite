@@ -24,9 +24,9 @@ withDefaults(defineProps<Props>(), {
     :max-width="maxWidth"
     class="bg-dark-850"
   >
-    <!-- Scrollable settings area -->
-    <div class="flex-1 overflow-y-auto min-h-0 p-4">
-      <SettingsPanel />
+    <!-- Settings area - SettingsPanel handles its own scrolling per tab -->
+    <div class="flex-1 min-h-0 p-4 flex flex-col">
+      <SettingsPanel class="flex-1 min-h-0" />
     </div>
 
     <!-- Fixed StatusPanel at bottom -->

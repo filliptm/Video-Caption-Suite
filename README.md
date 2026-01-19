@@ -2,6 +2,8 @@
 
 Batch video captioning using Qwen3-VL-8B vision-language model. Select a directory, process videos, get captions saved alongside them.
 
+![Video Caption Suite](assets/screenshot.png)
+
 ## Requirements
 
 - Python 3.10+

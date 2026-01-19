@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useVideoStore } from '@/stores/videoStore'
 
@@ -19,7 +20,27 @@ const emit = defineEmits<{
 }>()
 
 const videoStore = useVideoStore()
-const { loading, totalVideos, captionedVideos, pendingVideos } = storeToRefs(videoStore)
+const { loading, totalVideos, captionedVideos, pendingVideos, selectedVideos, videos } = storeToRefs(videoStore)
+
+// Compute which selection state is active
+const isAllSelected = computed(() => {
+  return videos.value.length > 0 && selectedVideos.value.size === videos.value.length
+})
+
+const isNoneSelected = computed(() => {
+  return selectedVideos.value.size === 0
+})
+
+const isPendingSelected = computed(() => {
+  if (selectedVideos.value.size === 0) return false
+  const pendingNames = new Set(videos.value.filter(v => !v.has_caption).map(v => v.name))
+  if (pendingNames.size === 0) return false
+  if (selectedVideos.value.size !== pendingNames.size) return false
+  for (const name of selectedVideos.value) {
+    if (!pendingNames.has(name)) return false
+  }
+  return true
+})
 
 function handleColumnChange(e: Event) {
   const value = parseInt((e.target as HTMLInputElement).value)
@@ -41,19 +62,34 @@ function handleColumnChange(e: Event) {
 
       <div class="hidden sm:flex items-center gap-1">
         <button
-          class="px-2 py-1 text-xs rounded hover:bg-dark-700 text-dark-400 hover:text-dark-200 transition-colors"
+          :class="[
+            'px-2 py-1 text-xs rounded transition-colors',
+            isAllSelected
+              ? 'bg-primary-600 text-white'
+              : 'hover:bg-dark-700 text-dark-400 hover:text-dark-200'
+          ]"
           @click="videoStore.selectAll()"
         >
           All
         </button>
         <button
-          class="px-2 py-1 text-xs rounded hover:bg-dark-700 text-dark-400 hover:text-dark-200 transition-colors"
+          :class="[
+            'px-2 py-1 text-xs rounded transition-colors',
+            isNoneSelected
+              ? 'bg-primary-600 text-white'
+              : 'hover:bg-dark-700 text-dark-400 hover:text-dark-200'
+          ]"
           @click="videoStore.selectNone()"
         >
           None
         </button>
         <button
-          class="px-2 py-1 text-xs rounded hover:bg-dark-700 text-dark-400 hover:text-dark-200 transition-colors"
+          :class="[
+            'px-2 py-1 text-xs rounded transition-colors',
+            isPendingSelected
+              ? 'bg-primary-600 text-white'
+              : 'hover:bg-dark-700 text-dark-400 hover:text-dark-200'
+          ]"
           @click="videoStore.selectPending()"
         >
           Pending

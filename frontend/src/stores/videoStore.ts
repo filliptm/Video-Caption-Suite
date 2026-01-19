@@ -183,6 +183,13 @@ export const useVideoStore = defineStore('video', () => {
     return captions.value.find(c => c.video_name === stem)
   }
 
+  function markVideoAsCaptioned(videoName: string) {
+    const video = videos.value.find(v => v.name === videoName)
+    if (video) {
+      video.has_caption = true
+    }
+  }
+
   return {
     videos,
     captions,
@@ -207,5 +214,6 @@ export const useVideoStore = defineStore('video', () => {
     selectNone,
     selectPending,
     getCaptionForVideo,
+    markVideoAsCaptioned,
   }
 })

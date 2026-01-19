@@ -107,13 +107,14 @@ onMounted(() => {
       <label class="block text-sm font-medium text-dark-300 mb-1">
         Working Directory
       </label>
-      <div class="flex gap-2">
-        <input
-          v-model="inputDir"
-          placeholder="Paste or type a directory path..."
-          class="flex-1 px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-dark-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          @keydown.enter="loadFromInput"
-        />
+      <input
+        v-model="inputDir"
+        placeholder="Paste or type a directory path..."
+        class="w-full px-3 py-2 bg-dark-700 border border-dark-600 rounded-lg text-dark-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+        @keydown.enter="loadFromInput"
+      />
+      <!-- Buttons below input -->
+      <div class="flex gap-2 mt-2">
         <BaseButton
           variant="secondary"
           :loading="loading"
@@ -127,10 +128,10 @@ onMounted(() => {
         </BaseButton>
       </div>
       <!-- Error message for input -->
-      <p v-if="inputError" class="text-xs text-red-400 mt-1">
+      <p v-if="inputError" class="text-xs text-red-400 mt-2">
         {{ inputError }}
       </p>
-      <p v-else class="text-xs text-dark-500 mt-1">
+      <p v-else class="text-xs text-dark-500 mt-2">
         Paste a path and press Enter or click Load. Videos and captions use this directory.
       </p>
     </div>

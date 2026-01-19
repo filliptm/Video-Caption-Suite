@@ -19,7 +19,7 @@ if errorlevel 1 (
 )
 
 REM Create virtual environment if it doesn't exist
-if not exist "venv\Scripts\activate.bat" (
+if not exist "venv\Scripts\python.exe" (
     echo [1/4] Creating virtual environment...
     python -m venv venv
     if errorlevel 1 (
@@ -31,30 +31,33 @@ if not exist "venv\Scripts\activate.bat" (
     echo [1/4] Virtual environment already exists
 )
 
-echo [2/4] Activating virtual environment...
-call venv\Scripts\activate.bat
+echo [2/4] Upgrading pip...
+venv\Scripts\python.exe -m pip install --upgrade pip -q
 
 echo [3/4] Installing Python dependencies...
-python -m pip install --upgrade pip -q
-pip install -r requirements.txt -q
+venv\Scripts\pip.exe install -r requirements.txt
 if errorlevel 1 (
     echo WARNING: Some packages may have failed to install
 )
 
-REM Check if Node.js is available for frontend
+REM Check if Node.js is available for frontend build
 node --version >nul 2>&1
 if errorlevel 1 (
     echo.
-    echo WARNING: Node.js is not installed
-    echo Frontend will use pre-built version if available
-    echo To rebuild frontend, install Node.js from https://nodejs.org
+    echo [4/4] Skipping frontend build (Node.js not installed)
+    echo       Frontend will use pre-built version if available
+    echo       To rebuild frontend, install Node.js from https://nodejs.org
 ) else (
-    echo [4/4] Installing frontend dependencies...
+    echo [4/4] Building frontend...
     cd frontend
     if exist "package.json" (
         call npm install -q 2>nul
-        echo Building frontend...
         call npm run build -q 2>nul
+        if errorlevel 1 (
+            echo WARNING: Frontend build may have failed
+        ) else (
+            echo       Frontend built successfully
+        )
     )
     cd ..
 )

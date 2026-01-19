@@ -210,14 +210,19 @@ onUnmounted(() => {
       </div>
 
       <!-- Selection checkbox -->
-      <div class="absolute top-1.5 left-1.5 z-10">
+      <button
+        class="absolute top-1.5 left-1.5 z-20 p-0.5"
+        type="button"
+        title="Toggle selection"
+        @click.stop="emit('select')"
+      >
         <div
           :class="[
             'w-5 h-5 rounded border-2 flex items-center justify-center transition-all',
             'shadow-sm',
             selected
               ? 'bg-primary-500 border-primary-500'
-              : 'bg-dark-900/80 border-dark-400 group-hover:border-dark-300',
+              : 'bg-dark-900/80 border-dark-400 hover:border-dark-200',
           ]"
         >
           <svg
@@ -230,7 +235,7 @@ onUnmounted(() => {
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
           </svg>
         </div>
-      </div>
+      </button>
 
       <!-- Status indicator -->
       <div class="absolute top-1.5 right-1.5 z-10">

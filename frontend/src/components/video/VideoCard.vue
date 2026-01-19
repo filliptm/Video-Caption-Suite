@@ -51,13 +51,18 @@ const formattedDuration = computed(() => {
     @click="emit('select')"
   >
     <!-- Selection checkbox -->
-    <div class="absolute top-3 left-3">
+    <button
+      class="absolute top-3 left-3 p-0.5"
+      type="button"
+      title="Toggle selection"
+      @click.stop="emit('select')"
+    >
       <div
         :class="[
           'w-5 h-5 rounded border-2 flex items-center justify-center transition-colors',
           selected
             ? 'bg-primary-500 border-primary-500'
-            : 'border-dark-500 group-hover:border-dark-400',
+            : 'border-dark-500 hover:border-dark-300',
         ]"
       >
         <svg
@@ -75,7 +80,7 @@ const formattedDuration = computed(() => {
           />
         </svg>
       </div>
-    </div>
+    </button>
 
     <!-- Status indicator -->
     <div class="absolute top-3 right-3">

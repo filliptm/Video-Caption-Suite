@@ -22,10 +22,10 @@ function toggleCollapse() {
 </script>
 
 <template>
-  <div class="card">
+  <div class="card flex flex-col">
     <div
       v-if="title || $slots.header"
-      class="card-header flex items-center justify-between"
+      class="card-header flex-shrink-0 flex items-center justify-between"
       :class="{ 'cursor-pointer hover:bg-dark-700/50': collapsible }"
       @click="toggleCollapse"
     >
@@ -48,10 +48,10 @@ function toggleCollapse() {
         />
       </svg>
     </div>
-    <div v-show="!collapsed" class="card-body">
+    <div v-show="!collapsed" class="card-body flex-1 min-h-0 flex flex-col">
       <slot />
     </div>
-    <div v-if="$slots.footer" class="px-4 py-3 border-t border-dark-700 bg-dark-800/30">
+    <div v-if="$slots.footer" class="flex-shrink-0 px-4 py-3 border-t border-dark-700 bg-dark-800/30">
       <slot name="footer" />
     </div>
   </div>

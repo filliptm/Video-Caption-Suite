@@ -623,6 +623,30 @@ class ProcessingManager:
             "torch_compiled": self.model_info.get("torch_compiled", False) if self.model_info else False,
         }
 
+    async def unload_model(self):
+        """Unload model and free GPU memory"""
+        from model_loader import clear_cache
+
+        async with self._lock:
+            # Clear all model references first
+            self.model_info = None
+            self.model_infos.clear()
+
+            # Clear worker states
+            for worker in self.state.workers:
+                worker.model_info = None
+
+            self.state.workers.clear()
+            self.state.model_loaded = False
+
+            # Now clear cache and GPU memory
+            clear_cache()
+
+            self._update_vram()
+            await self.emit_progress()
+
+            print("[ProcessingManager] Model unloaded and GPU memory freed")
+
     def reset(self):
         """Reset processing state"""
         self.state = ProcessingState()

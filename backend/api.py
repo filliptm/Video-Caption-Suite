@@ -777,16 +777,11 @@ async def load_model():
 @app.post("/api/model/unload")
 async def unload_model():
     """Unload the model to free VRAM"""
-    from model_loader import clear_cache
-
     if _processing_manager.is_processing:
         raise HTTPException(status_code=409, detail="Processing in progress")
 
     try:
-        clear_cache()
-        _processing_manager.model_info = None
-        _processing_manager.state.model_loaded = False
-        _processing_manager._update_vram()
+        await _processing_manager.unload_model()
         await broadcast_progress(_processing_manager.state.to_progress_update())
         return {"success": True, "message": "Model unloaded"}
     except Exception as e:

@@ -410,15 +410,38 @@ def generate_caption(
 def clear_cache():
     """Clear model cache and free GPU memory"""
     global _MODEL_CACHE
+
+    # Explicitly delete model and processor objects to free GPU memory
+    for cache_key in list(_MODEL_CACHE.keys()):
+        model_info = _MODEL_CACHE.get(cache_key)
+        if model_info:
+            # Delete model first (largest GPU memory consumer)
+            if "model" in model_info:
+                del model_info["model"]
+            # Delete processor
+            if "processor" in model_info:
+                del model_info["processor"]
+
     _MODEL_CACHE.clear()
 
+    # Force garbage collection before clearing CUDA cache
     import gc
     gc.collect()
 
     if torch.cuda.is_available():
-        torch.cuda.empty_cache()
+        # Synchronize all CUDA devices before clearing cache
+        for i in range(torch.cuda.device_count()):
+            with torch.cuda.device(i):
+                torch.cuda.synchronize()
+                torch.cuda.empty_cache()
 
-    print("[Model Loader] Cache cleared")
+        # Additional aggressive memory cleanup
+        torch.cuda.reset_peak_memory_stats()
+
+    # Run GC again after CUDA cleanup
+    gc.collect()
+
+    print("[Model Loader] Cache cleared and GPU memory freed")
 
 
 if __name__ == "__main__":

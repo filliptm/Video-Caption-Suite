@@ -147,23 +147,32 @@ markVideoAsCaptioned(videoName: string): void
 deleteCaption(videoName: string): Promise<void>
 ```
 
-**SSE Streaming:**
-The `fetchVideos()` action uses Server-Sent Events for progressive loading:
+**SSE Streaming with Batch Throttling:**
+The `fetchVideos()` action uses Server-Sent Events for progressive loading. Incoming batches are buffered in a plain (non-reactive) array and flushed to Vue reactive state at most every 150ms, reducing reactivity cascades from ~50 to ~10 for large libraries (1000+ files):
 
 ```typescript
-const eventSource = new EventSource('/api/videos/stream')
+// Plain array buffer (no Vue reactivity overhead)
+let pendingItems: VideoInfo[] = []
+let flushTimer: ReturnType<typeof setTimeout> | null = null
 
-eventSource.addEventListener('video', (event) => {
-  const video = JSON.parse(event.data)
-  this.videos.push(video)
-  this.loadingLoaded++
-})
+const flushPending = () => {
+  if (pendingItems.length > 0) {
+    videos.value = [...videos.value, ...pendingItems]
+    pendingItems = []
+  }
+  flushTimer = null
+}
 
-eventSource.addEventListener('complete', (event) => {
-  const { total } = JSON.parse(event.data)
-  this.loadingTotal = total
-  eventSource.close()
-})
+const scheduleFlush = () => {
+  if (!flushTimer) {
+    flushTimer = setTimeout(flushPending, 150)
+  }
+}
+
+// SSE message handling
+// 'total' → sets loadingTotal
+// 'batch' → pushes to pendingItems, schedules flush
+// 'done'  → immediate final flush
 ```
 
 ---
@@ -569,7 +578,7 @@ interface Props {
 
 **Features:**
 - Thumbnail display with lazy loading
-- Video preview on hover
+- Video preview on hover (`preload="none"` to avoid downloading video data until playback)
 - Selection checkbox
 - Caption status indicator
 - Metadata display (size, duration, resolution)

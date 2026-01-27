@@ -49,6 +49,25 @@ export const useVideoStore = defineStore('video', () => {
       const decoder = new TextDecoder()
       let buffer = ''
 
+      // Throttled flush: accumulate in plain array, apply to reactive state at most every 150ms
+      // This reduces Vue reactivity cascades from ~50 to ~10 for large libraries
+      let pendingItems: VideoInfo[] = []
+      let flushTimer: ReturnType<typeof setTimeout> | null = null
+
+      const flushPending = () => {
+        if (pendingItems.length > 0) {
+          videos.value = [...videos.value, ...pendingItems]
+          pendingItems = []
+        }
+        flushTimer = null
+      }
+
+      const scheduleFlush = () => {
+        if (!flushTimer) {
+          flushTimer = setTimeout(flushPending, 150)
+        }
+      }
+
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
@@ -67,10 +86,16 @@ export const useVideoStore = defineStore('video', () => {
               if (data.type === 'total') {
                 loadingTotal.value = data.count
               } else if (data.type === 'batch') {
-                videos.value.push(...data.videos)
+                pendingItems.push(...data.videos)
                 loadingLoaded.value = data.loaded
+                scheduleFlush()
               } else if (data.type === 'done') {
-                // Loading complete
+                // Final flush - apply everything at once
+                if (flushTimer) {
+                  clearTimeout(flushTimer)
+                  flushTimer = null
+                }
+                flushPending()
               }
             } catch (e) {
               console.error('Failed to parse SSE message:', e)
@@ -78,6 +103,12 @@ export const useVideoStore = defineStore('video', () => {
           }
         }
       }
+
+      // Ensure everything is flushed after stream ends
+      if (flushTimer) {
+        clearTimeout(flushTimer)
+      }
+      flushPending()
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Unknown error'
       // Fallback to regular endpoint if streaming fails

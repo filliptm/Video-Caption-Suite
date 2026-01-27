@@ -3,6 +3,7 @@ Video Processing Utilities
 Extract and process frames from video files
 """
 
+import os
 import cv2
 import numpy as np
 from PIL import Image
@@ -11,6 +12,11 @@ from typing import List, Optional, Tuple
 import time
 
 import config
+
+# Pre-compute extension sets for fast lookup
+_VIDEO_EXT_SET = {ext.lower() for ext in config.VIDEO_EXTENSIONS}
+_IMAGE_EXT_SET = {ext.lower() for ext in config.IMAGE_EXTENSIONS}
+_ALL_MEDIA_EXT_SET = _VIDEO_EXT_SET | _IMAGE_EXT_SET
 
 
 def get_video_info(video_path: Path) -> dict:
@@ -158,78 +164,85 @@ def resize_image(
     return image.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
 
-def find_videos(directory: Path = None, traverse_subfolders: bool = False) -> List[Path]:
+def find_all_media(
+    directory: Path = None,
+    traverse_subfolders: bool = False,
+    include_videos: bool = True,
+    include_images: bool = True,
+) -> Tuple[List[Path], List[Path]]:
     """
-    Find all video files in a directory.
-
-    Args:
-        directory: Directory to search (default: config.INPUT_DIR)
-        traverse_subfolders: If True, recursively search subdirectories
-
-    Returns:
-        List of video file paths
-    """
-    directory = directory or config.INPUT_DIR
-
-    if not directory.exists():
-        return []
-
-    videos = []
-    # Use ** for recursive glob if traverse_subfolders is True
-    glob_pattern = "**/*{}" if traverse_subfolders else "*{}"
-
-    for ext in config.VIDEO_EXTENSIONS:
-        videos.extend(directory.glob(glob_pattern.format(ext)))
-
-    # Remove duplicates (Windows is case-insensitive) and sort
-    seen = set()
-    unique_videos = []
-    for v in videos:
-        # Use full path for uniqueness when traversing subfolders
-        key = str(v).lower() if traverse_subfolders else v.name.lower()
-        if key not in seen:
-            seen.add(key)
-            unique_videos.append(v)
-
-    unique_videos.sort(key=lambda p: str(p).lower())
-    return unique_videos
-
-
-def find_images(directory: Path = None, traverse_subfolders: bool = False) -> List[Path]:
-    """
-    Find all image files in a directory.
+    Single-pass file discovery for all media types.
+    Uses os.scandir/os.walk instead of per-extension glob for much better
+    performance with large directories (one traversal vs 16-28 glob calls).
 
     Args:
         directory: Directory to search
         traverse_subfolders: If True, recursively search subdirectories
+        include_videos: Include video files in results
+        include_images: Include image files in results
 
     Returns:
-        List of image file paths
+        Tuple of (video_paths, image_paths), each sorted by name
     """
     directory = directory or config.get_working_directory()
+    if not directory or not directory.exists():
+        return [], []
 
-    if not directory.exists():
-        return []
-
+    videos = []
     images = []
-    glob_pattern = "**/*{}" if traverse_subfolders else "*{}"
-
-    for ext in config.IMAGE_EXTENSIONS:
-        # Handle both lowercase and uppercase extensions
-        images.extend(directory.glob(glob_pattern.format(ext)))
-        images.extend(directory.glob(glob_pattern.format(ext.upper())))
-
-    # Remove duplicates (Windows is case-insensitive) and sort
     seen = set()
-    unique_images = []
-    for img in images:
-        key = str(img).lower() if traverse_subfolders else img.name.lower()
-        if key not in seen:
-            seen.add(key)
-            unique_images.append(img)
 
-    unique_images.sort(key=lambda p: str(p).lower())
-    return unique_images
+    if traverse_subfolders:
+        for root, _dirs, files in os.walk(directory):
+            for name in files:
+                ext = os.path.splitext(name)[1].lower()
+                if ext not in _ALL_MEDIA_EXT_SET:
+                    continue
+                full_path = Path(root) / name
+                key = str(full_path).lower()
+                if key in seen:
+                    continue
+                seen.add(key)
+                if include_videos and ext in _VIDEO_EXT_SET:
+                    videos.append(full_path)
+                elif include_images and ext in _IMAGE_EXT_SET:
+                    images.append(full_path)
+    else:
+        try:
+            with os.scandir(directory) as entries:
+                for entry in entries:
+                    if not entry.is_file():
+                        continue
+                    ext = os.path.splitext(entry.name)[1].lower()
+                    if ext not in _ALL_MEDIA_EXT_SET:
+                        continue
+                    key = entry.name.lower()
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    full_path = Path(entry.path)
+                    if include_videos and ext in _VIDEO_EXT_SET:
+                        videos.append(full_path)
+                    elif include_images and ext in _IMAGE_EXT_SET:
+                        images.append(full_path)
+        except PermissionError:
+            pass
+
+    videos.sort(key=lambda p: str(p).lower())
+    images.sort(key=lambda p: str(p).lower())
+    return videos, images
+
+
+def find_videos(directory: Path = None, traverse_subfolders: bool = False) -> List[Path]:
+    """Find all video files in a directory. Wrapper around find_all_media()."""
+    videos, _ = find_all_media(directory, traverse_subfolders, include_videos=True, include_images=False)
+    return videos
+
+
+def find_images(directory: Path = None, traverse_subfolders: bool = False) -> List[Path]:
+    """Find all image files in a directory. Wrapper around find_all_media()."""
+    _, images = find_all_media(directory, traverse_subfolders, include_videos=False, include_images=True)
+    return images
 
 
 def process_image(

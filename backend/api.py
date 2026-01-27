@@ -19,6 +19,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 import hashlib
 import subprocess
 import io
+from concurrent.futures import ThreadPoolExecutor
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -38,7 +39,7 @@ from backend.schemas import (
 )
 from backend.gpu_utils import get_system_info
 from backend.processing import ProcessingManager
-from video_processor import find_videos, find_images, get_video_info
+from video_processor import find_videos, find_images, find_all_media, get_video_info
 
 
 # Settings file path
@@ -224,8 +225,7 @@ async def get_directory():
     include_videos = config.get_include_videos()
     include_images = config.get_include_images()
 
-    videos = find_videos(working_dir, traverse_subfolders=traverse) if include_videos else []
-    images = find_images(working_dir, traverse_subfolders=traverse) if include_images else []
+    videos, images = find_all_media(working_dir, traverse, include_videos, include_images)
 
     return DirectoryResponse(
         directory=str(working_dir),
@@ -258,9 +258,10 @@ async def set_directory(request: DirectoryRequest):
     config.set_include_images(request.include_images)
     print(f"[API] Working directory set to: {path} (traverse={request.traverse_subfolders}, videos={request.include_videos}, images={request.include_images})")
 
-    # Count media in new directory
-    videos = find_videos(path, traverse_subfolders=request.traverse_subfolders) if request.include_videos else []
-    images = find_images(path, traverse_subfolders=request.traverse_subfolders) if request.include_images else []
+    # Count media in new directory (single-pass scan)
+    videos, images = find_all_media(
+        path, request.traverse_subfolders, request.include_videos, request.include_images
+    )
 
     return DirectoryResponse(
         directory=str(path),
@@ -401,7 +402,7 @@ def get_media_info_fast(media_path: Path, working_dir: Path = None, media_type: 
     if has_caption:
         try:
             with open(caption_path, "r", encoding="utf-8") as f:
-                text = f.read()
+                text = f.read(200)  # Only read first 200 chars for preview
                 caption_preview = text[:150] + "..." if len(text) > 150 else text
         except Exception:
             pass
@@ -443,23 +444,23 @@ def get_video_info_fast(video_path: Path, working_dir: Path = None) -> VideoInfo
 @app.get("/api/videos/stream")
 async def stream_videos():
     """Stream media files as Server-Sent Events for progressive loading"""
+    # Shared list so we can pre-generate thumbnails after streaming
+    captured_media_items = []
+
     async def generate():
         working_dir = config.get_working_directory()
         traverse = config.get_traverse_subfolders()
         include_videos = config.get_include_videos()
         include_images = config.get_include_images()
 
-        # Collect all media with their types
-        media_items = []
-        if include_videos:
-            for v in find_videos(working_dir, traverse_subfolders=traverse):
-                media_items.append((v, MediaType.VIDEO))
-        if include_images:
-            for img in find_images(working_dir, traverse_subfolders=traverse):
-                media_items.append((img, MediaType.IMAGE))
-
-        # Sort by name
+        # Single-pass file discovery (much faster than per-extension glob)
+        videos_list, images_list = find_all_media(
+            working_dir, traverse, include_videos, include_images
+        )
+        media_items = [(v, MediaType.VIDEO) for v in videos_list] + \
+                      [(img, MediaType.IMAGE) for img in images_list]
         media_items.sort(key=lambda x: str(x[0]).lower())
+        captured_media_items.extend(media_items)
         total = len(media_items)
         batch_size = 100
 
@@ -484,8 +485,15 @@ async def stream_videos():
         # Send done signal
         yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
+    async def stream_and_pregenerate():
+        async for chunk in generate():
+            yield chunk
+        # After stream completes, kick off background thumbnail pre-generation
+        if captured_media_items:
+            asyncio.create_task(_pregenerate_thumbnails(captured_media_items))
+
     return StreamingResponse(
-        generate(),
+        stream_and_pregenerate(),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -596,6 +604,9 @@ async def delete_video(video_name: str):
 THUMBNAIL_CACHE_DIR = config.PROJECT_ROOT / ".thumbnail_cache"
 THUMBNAIL_CACHE_DIR.mkdir(exist_ok=True)
 
+# Thread pool for parallel thumbnail generation
+_thumbnail_executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="thumb")
+
 
 def get_thumbnail_cache_path(video_path: Path, size: int) -> Path:
     """Generate cache path for thumbnail based on video path and modification time"""
@@ -606,7 +617,7 @@ def get_thumbnail_cache_path(video_path: Path, size: int) -> Path:
 
 
 def generate_thumbnail(video_path: Path, output_path: Path, size: int = 160) -> bool:
-    """Generate thumbnail using ffmpeg"""
+    """Generate thumbnail for a video file using ffmpeg"""
     try:
         cmd = [
             "ffmpeg", "-y", "-i", str(video_path),
@@ -623,24 +634,93 @@ def generate_thumbnail(video_path: Path, output_path: Path, size: int = 160) -> 
         return False
 
 
+def generate_image_thumbnail(image_path: Path, output_path: Path, size: int = 160) -> bool:
+    """Generate thumbnail for an image file using PIL (much faster than ffmpeg)"""
+    from PIL import Image as PILImage
+    try:
+        with PILImage.open(image_path) as img:
+            if img.mode not in ('RGB', 'L'):
+                img = img.convert('RGB')
+            # Resize maintaining aspect ratio then center-crop to square
+            img.thumbnail((size * 2, size * 2), PILImage.Resampling.LANCZOS)
+            width, height = img.size
+            left = (width - min(width, size)) // 2
+            top = (height - min(height, size)) // 2
+            right = left + min(width, size)
+            bottom = top + min(height, size)
+            img = img.crop((left, top, right, bottom))
+            img.save(output_path, "JPEG", quality=85)
+        return output_path.exists()
+    except Exception as e:
+        print(f"[API] Image thumbnail generation failed for {image_path}: {e}")
+        return False
+
+
+def _generate_any_thumbnail(media_path: Path, cache_path: Path, size: int) -> bool:
+    """Route to the correct thumbnail generator based on file extension"""
+    ext = media_path.suffix.lower()
+    if ext in config.IMAGE_EXTENSIONS:
+        return generate_image_thumbnail(media_path, cache_path, size)
+    else:
+        return generate_thumbnail(media_path, cache_path, size)
+
+
+async def _pregenerate_thumbnails(media_items: list):
+    """Background task: pre-generate thumbnails for all uncached media files."""
+    default_size = 200  # Match VideoTile.vue thumbnailSize default
+
+    uncached = []
+    for media_path, media_type in media_items:
+        try:
+            cache_path = get_thumbnail_cache_path(media_path, default_size)
+            if not cache_path.exists():
+                uncached.append((media_path, cache_path, default_size))
+        except Exception:
+            continue
+
+    if not uncached:
+        return
+
+    print(f"[API] Pre-generating {len(uncached)} thumbnails in background...")
+    loop = asyncio.get_event_loop()
+    generated = 0
+
+    # Process in batches of 50 to avoid overwhelming I/O
+    batch_size = 50
+    for i in range(0, len(uncached), batch_size):
+        batch = uncached[i:i + batch_size]
+        futures = [
+            loop.run_in_executor(
+                _thumbnail_executor,
+                _generate_any_thumbnail,
+                media_path, cache_path, size
+            )
+            for media_path, cache_path, size in batch
+        ]
+        results = await asyncio.gather(*futures, return_exceptions=True)
+        generated += sum(1 for r in results if r is True)
+        await asyncio.sleep(0)  # Yield to other tasks
+
+    print(f"[API] Pre-generated {generated}/{len(uncached)} thumbnails")
+
+
 @app.get("/api/videos/{video_name:path}/thumbnail")
 async def get_video_thumbnail(video_name: str, size: int = 160):
-    """Get thumbnail for a video. Generates and caches if not exists."""
+    """Get thumbnail for a media file. Generates and caches if not exists."""
     # Clamp size to reasonable bounds
     size = max(64, min(320, size))
 
     working_dir = config.get_working_directory()
     video_path = working_dir / video_name
     if not video_path.exists():
-        raise HTTPException(status_code=404, detail="Video not found")
+        raise HTTPException(status_code=404, detail="Media not found")
 
     cache_path = get_thumbnail_cache_path(video_path, size)
 
-    # Check cache
+    # Check cache - generate in thread to avoid blocking event loop
     if not cache_path.exists():
-        success = generate_thumbnail(video_path, cache_path, size)
+        success = await asyncio.to_thread(_generate_any_thumbnail, video_path, cache_path, size)
         if not success:
-            # Return a placeholder response
             raise HTTPException(status_code=500, detail="Failed to generate thumbnail")
 
     # Return cached thumbnail

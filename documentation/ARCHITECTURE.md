@@ -196,6 +196,7 @@ model_loader.py
 
 video_processor.py
   ├── config.py
+  ├── os (scandir/walk for file discovery)
   └── cv2, PIL (external)
 ```
 
@@ -303,8 +304,20 @@ Composables:
 
 ## Performance Optimizations
 
+### Model Inference
 1. **SageAttention**: 2-5x attention speedup (when compatible)
 2. **torch.compile**: JIT compilation for optimized inference
-3. **Thumbnail Caching**: MD5-based cache avoids regeneration
-4. **Virtual Scrolling**: Efficient rendering of large video grids
-5. **Batch Processing**: Parallel GPU utilization
+3. **Batch Processing**: Parallel GPU utilization
+
+### Media Loading
+4. **Single-Pass File Discovery**: `find_all_media()` in `video_processor.py` uses `os.scandir()` (flat) or `os.walk()` (recursive) with pre-computed extension sets, replacing 16-28 per-extension `glob()` calls with a single directory traversal
+5. **PIL Image Thumbnails**: Image files use `Pillow` for thumbnail generation (fast), while video files use `ffmpeg`. Routed automatically by file extension via `_generate_any_thumbnail()`
+6. **Background Thumbnail Pre-generation**: After SSE streaming completes, `asyncio.create_task()` kicks off a `ThreadPoolExecutor(max_workers=4)` to pre-generate all uncached thumbnails in batches of 50
+7. **Non-blocking Thumbnail Endpoint**: On-demand thumbnail requests use `asyncio.to_thread()` so generation doesn't block the FastAPI event loop
+8. **Caption Preview Optimization**: Only reads first 200 bytes of caption files for preview text, instead of loading entire files
+
+### Frontend
+9. **Virtual Scrolling**: Efficient rendering of large video grids (only visible + buffer rows)
+10. **SSE Batch Throttling**: Incoming video batches accumulate in a plain (non-reactive) array and flush to Vue reactive state at most every 150ms, reducing reactivity cascades from ~50 to ~10 for large libraries
+11. **Video Preview `preload="none"`**: Hover preview video elements use `preload="none"` to prevent browsers from downloading video data until playback starts
+12. **Thumbnail Caching**: MD5-based cache avoids regeneration on subsequent loads

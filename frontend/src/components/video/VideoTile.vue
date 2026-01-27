@@ -180,7 +180,7 @@ onUnmounted(() => {
         loop
         playsinline
         autoplay
-        preload="auto"
+        preload="none"
         @canplay="handleVideoCanPlay"
         @loadeddata="handleVideoLoadedData"
         @timeupdate="handleVideoTimeUpdate"

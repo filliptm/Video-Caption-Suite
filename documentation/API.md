@@ -462,13 +462,22 @@ Delete a video file.
 
 ### GET /api/videos/{video_name}/thumbnail
 
-Get video thumbnail (generated and cached).
+Get media thumbnail (generated and cached).
 
 **Response:** JPEG image (`image/jpeg`)
 
-**Caching:** Thumbnails are cached in `.thumbnails/` directory with MD5-based filenames.
+**Query Parameters:**
+- `size` (optional, default: 160): Thumbnail size in pixels (clamped 64-320)
 
-**File Reference:** `backend/api.py:573-610`
+**Caching:** Thumbnails are cached in `.thumbnail_cache/` with MD5-based filenames keyed on file name, mtime, size, and requested dimensions.
+
+**Generation:**
+- **Videos:** Uses ffmpeg to extract a frame at 1 second
+- **Images:** Uses PIL for fast resize and center-crop
+- **Background pre-generation:** After the SSE media stream completes, uncached thumbnails are generated in background using a 4-thread pool
+- On-demand generation runs in a separate thread to avoid blocking the API
+
+**File Reference:** `backend/api.py:596-720`
 
 ---
 

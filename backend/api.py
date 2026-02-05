@@ -922,17 +922,22 @@ async def start_processing(request: ProcessingRequest = None):
         print("[API] Already processing, returning 409")
         raise HTTPException(status_code=409, detail="Processing already in progress")
 
-    # Get videos to process from working directory
+    # Get all media to process from working directory
     working_dir = config.get_working_directory()
     traverse = config.get_traverse_subfolders()
-    all_videos = find_videos(working_dir, traverse_subfolders=traverse)
-    print(f"[API] Found {len(all_videos)} videos in {working_dir} (traverse={traverse})")
+    include_videos = config.get_include_videos()
+    include_images = config.get_include_images()
+    found_videos, found_images = find_all_media(
+        working_dir, traverse, include_videos, include_images
+    )
+    all_media = found_videos + found_images
+    print(f"[API] Found {len(found_videos)} videos + {len(found_images)} images in {working_dir} (traverse={traverse})")
 
     if request and request.video_names:
-        # Filter to specific videos - match on relative path when traversing subfolders
+        # Filter to specific media - match on relative path when traversing subfolders
         # Normalize path separators to forward slashes for cross-platform compatibility
         video_names_lower = {n.replace('\\', '/').lower() for n in request.video_names}
-        print(f"[API] Filtering to specific videos: {request.video_names}")
+        print(f"[API] Filtering to specific media: {request.video_names}")
 
         def get_relative_name(v: Path) -> str:
             """Get relative path from working directory for matching"""
@@ -942,20 +947,20 @@ async def start_processing(request: ProcessingRequest = None):
             except ValueError:
                 return v.name.lower()
 
-        videos = [v for v in all_videos if get_relative_name(v) in video_names_lower]
-        print(f"[API] After filtering: {[get_relative_name(v) for v in videos]}")
+        media = [v for v in all_media if get_relative_name(v) in video_names_lower]
+        print(f"[API] After filtering: {[get_relative_name(v) for v in media]}")
     else:
-        videos = all_videos
+        media = all_media
 
-    if not videos:
-        print("[API] No videos to process, returning 400")
-        raise HTTPException(status_code=400, detail="No videos to process")
+    if not media:
+        print("[API] No media to process, returning 400")
+        raise HTTPException(status_code=400, detail="No media to process")
 
     # Start processing in background
     async def run_processing():
         print("[API] Background task started")
         try:
-            await _processing_manager.process_videos(videos, _settings)
+            await _processing_manager.process_videos(media, _settings)
             print("[API] Background task completed successfully")
         except Exception as e:
             print(f"[API] Processing error: {e}")
@@ -970,8 +975,8 @@ async def start_processing(request: ProcessingRequest = None):
 
     return ProcessingResponse(
         success=True,
-        message=f"Started processing {len(videos)} videos",
-        videos_queued=len(videos),
+        message=f"Started processing {len(media)} files",
+        videos_queued=len(media),
     )
 
 

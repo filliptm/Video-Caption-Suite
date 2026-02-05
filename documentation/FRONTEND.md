@@ -513,7 +513,7 @@ const { width, isResizing, startResize } = useResizable({
 - Overall layout orchestration
 - **Main navigation tabs** (Media / Analytics)
 - Model load/unload buttons
-- Process start/stop buttons
+- Process start/stop buttons (Start button shows selection count, e.g. "Start (12)")
 - Video grid with virtual scrolling
 - Caption panel display
 - Analytics panel display
@@ -560,6 +560,28 @@ const { width, isResizing, startResize } = useResizable({
     </footer>
   </div>
 </template>
+```
+
+---
+
+### VideoGridToolbar.vue
+
+**Purpose:** Toolbar above the media grid with stats, selection presets, and grid controls.
+
+**File:** `frontend/src/components/video/VideoGridToolbar.vue`
+
+**Features:**
+- Media count stats (total, done, pending)
+- Selection preset buttons: All, None, Pending (highlight when active)
+- **Custom selection indicator**: "Custom (N)" badge appears when individual tiles are selected outside of a preset
+- Grid column slider and refresh button
+
+**Selection State Detection:**
+```typescript
+isAllSelected    // all videos selected
+isNoneSelected   // nothing selected
+isPendingSelected // exactly the uncaptioned videos selected
+isCustomSelected  // has selection, but doesn't match any preset
 ```
 
 ---

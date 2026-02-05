@@ -42,6 +42,10 @@ const isPendingSelected = computed(() => {
   return true
 })
 
+const isCustomSelected = computed(() => {
+  return selectedVideos.value.size > 0 && !isAllSelected.value && !isPendingSelected.value
+})
+
 function handleColumnChange(e: Event) {
   const value = parseInt((e.target as HTMLInputElement).value)
   emit('update:gridColumns', value)
@@ -94,6 +98,12 @@ function handleColumnChange(e: Event) {
         >
           Pending
         </button>
+        <span
+          v-if="isCustomSelected"
+          class="px-2 py-1 text-xs rounded bg-primary-600 text-white"
+        >
+          Custom ({{ selectedVideos.size }})
+        </span>
       </div>
     </div>
 

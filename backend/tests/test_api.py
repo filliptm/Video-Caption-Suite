@@ -13,8 +13,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 # Mock the imports that require GPU/model
 with patch.dict('sys.modules', {
     'torch': MagicMock(),
-    'model_loader': MagicMock(),
-    'video_processor': MagicMock(),
+    'backend.model_loader': MagicMock(),
+    'backend.video_processor': MagicMock(),
 }):
     from backend.api import app
 

@@ -10,9 +10,6 @@ from pathlib import Path
 from typing import Callable, Optional, List, Any, Dict
 from dataclasses import dataclass, field
 
-import sys
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 from backend.schemas import (
     Settings, ProgressUpdate, ProcessingStage, ProcessingSubstage,
     VideoInfo, WorkerProgress, MediaType
@@ -118,7 +115,7 @@ class ProcessingManager:
 
     def _get_display_name(self, video_path: Path) -> str:
         """Get display name matching frontend VideoInfo.name format (relative path with forward slashes)"""
-        import config as _config
+        from backend import config as _config
         working_dir = _config.get_working_directory()
         try:
             return str(video_path.relative_to(working_dir)).replace('\\', '/')
@@ -139,7 +136,7 @@ class ProcessingManager:
         For single GPU (batch_size=1) or first GPU in multi-GPU setup.
         Returns True on success, False on failure.
         """
-        from model_loader import load_model, clear_cache
+        from backend.model_loader import load_model, clear_cache
 
         print(f"[ProcessingManager] load_model called with model_id={settings.model_id}")
 
@@ -200,7 +197,7 @@ class ProcessingManager:
 
     async def load_models_parallel(self, settings: Settings, devices: List[str]) -> bool:
         """Load model copies on multiple GPUs in parallel"""
-        from model_loader import load_model, clear_cache
+        from backend.model_loader import load_model, clear_cache
 
         print(f"[ProcessingManager] Loading models on {len(devices)} devices: {devices}")
 
@@ -286,9 +283,9 @@ class ProcessingManager:
         """
         Process media (videos and images) in parallel across multiple GPUs.
         """
-        from model_loader import generate_caption
-        from video_processor import process_video, process_image
-        import config
+        from backend.model_loader import generate_caption
+        from backend.video_processor import process_video, process_image
+        from backend import config
 
         batch_size = min(settings.batch_size, len(videos))
         devices = [f"cuda:{i}" for i in range(batch_size)]
@@ -503,9 +500,9 @@ class ProcessingManager:
         Process a list of media files (videos and images) sequentially (original single-GPU behavior).
         Returns list of results for each file.
         """
-        from model_loader import generate_caption
-        from video_processor import process_video, process_image
-        import config
+        from backend.model_loader import generate_caption
+        from backend.video_processor import process_video, process_image
+        from backend import config
 
         print(f"[ProcessingManager] process_videos called with {len(videos)} videos")
         for v in videos:
@@ -669,7 +666,7 @@ class ProcessingManager:
 
     async def unload_model(self):
         """Unload model and free GPU memory"""
-        from model_loader import clear_cache
+        from backend.model_loader import clear_cache
 
         async with self._lock:
             # Clear all model references first

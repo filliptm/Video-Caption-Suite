@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Optional, Dict, Any, Tuple
 from huggingface_hub import snapshot_download
 
-import config
+from backend import config
 
 # Global state
 _MODEL_CACHE: Dict[str, Any] = {}

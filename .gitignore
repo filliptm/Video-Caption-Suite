@@ -22,6 +22,7 @@ models/
 # User data
 settings.json
 prompt_library.json
+user_config.json
 
 # IDE
 .vscode/

@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import List, Optional, Tuple
 import time
 
-import config
+from backend import config
 
 # Pre-compute extension sets for fast lookup
 _VIDEO_EXT_SET = {ext.lower() for ext in config.VIDEO_EXTENSIONS}

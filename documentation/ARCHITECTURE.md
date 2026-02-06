@@ -35,15 +35,15 @@ This document describes the system architecture, data flow, and component relati
 └──────────────────────────────────┬──────────────────────────────────────────┘
                                    │
 ┌──────────────────────────────────┴──────────────────────────────────────────┐
-│                          CORE MODULES                                        │
-│  ┌─────────────────────────┐  ┌─────────────────────────────────────────┐   │
-│  │    model_loader.py      │  │         video_processor.py              │   │
-│  │  - Model download       │  │  - Frame extraction (OpenCV)            │   │
-│  │  - SageAttention        │  │  - Video metadata                       │   │
-│  │  - torch.compile        │  │  - Resize/sampling                      │   │
-│  │  - Caption generation   │  │  - Directory scanning                   │   │
-│  │  - Memory management    │  │                                         │   │
-│  └────────────┬────────────┘  └─────────────────────────────────────────┘   │
+│                          CORE MODULES (backend/)                             │
+│  ┌─────────────────────────────┐  ┌─────────────────────────────────────┐   │
+│  │  backend/model_loader.py    │  │   backend/video_processor.py        │   │
+│  │  - Model download           │  │  - Frame extraction (OpenCV)        │   │
+│  │  - SageAttention            │  │  - Video metadata                   │   │
+│  │  - torch.compile            │  │  - Resize/sampling                  │   │
+│  │  - Caption generation       │  │  - Directory scanning               │   │
+│  │  - Memory management        │  │                                     │   │
+│  └──────────────┬──────────────┘  └─────────────────────────────────────┘   │
 └───────────────┼─────────────────────────────────────────────────────────────┘
                 │
 ┌───────────────┴─────────────────────────────────────────────────────────────┐
@@ -209,6 +209,8 @@ video_processor.py
   ├── config.py
   ├── os (scandir/walk for file discovery)
   └── cv2, PIL (external)
+
+Note: All modules above are located in the `backend/` directory (e.g., `backend/config.py`, `backend/model_loader.py`, etc.).
 ```
 
 ### Frontend Component Hierarchy
@@ -312,10 +314,10 @@ Composables:
 | Processing endpoints | `backend/api.py` | 800-900 |
 | ProcessingManager | `backend/processing.py` | 85-250 |
 | Parallel processing | `backend/processing.py` | 264-464 |
-| Model loading | `model_loader.py` | 158-295 |
-| Caption generation | `model_loader.py` | 298-407 |
-| Memory cleanup | `model_loader.py` | 410-444 |
-| Frame extraction | `video_processor.py` | 80-150 |
+| Model loading | `backend/model_loader.py` | 158-295 |
+| Caption generation | `backend/model_loader.py` | 298-407 |
+| Memory cleanup | `backend/model_loader.py` | 410-444 |
+| Frame extraction | `backend/video_processor.py` | 80-150 |
 | Vue root component | `frontend/src/App.vue` | 1-464 |
 | Video store | `frontend/src/stores/videoStore.ts` | Full file |
 | Progress store | `frontend/src/stores/progressStore.ts` | Full file |
@@ -336,7 +338,7 @@ Composables:
 3. **Batch Processing**: Parallel GPU utilization
 
 ### Media Loading
-4. **Single-Pass File Discovery**: `find_all_media()` in `video_processor.py` uses `os.scandir()` (flat) or `os.walk()` (recursive) with pre-computed extension sets, replacing 16-28 per-extension `glob()` calls with a single directory traversal
+4. **Single-Pass File Discovery**: `find_all_media()` in `backend/video_processor.py` uses `os.scandir()` (flat) or `os.walk()` (recursive) with pre-computed extension sets, replacing 16-28 per-extension `glob()` calls with a single directory traversal
 5. **PIL Image Thumbnails**: Image files use `Pillow` for thumbnail generation (fast), while video files use `ffmpeg`. Routed automatically by file extension via `_generate_any_thumbnail()`
 6. **Background Thumbnail Pre-generation**: After SSE streaming completes, `asyncio.create_task()` kicks off a `ThreadPoolExecutor(max_workers=4)` to pre-generate all uncached thumbnails in batches of 50
 7. **Non-blocking Thumbnail Endpoint**: On-demand thumbnail requests use `asyncio.to_thread()` so generation doesn't block the FastAPI event loop

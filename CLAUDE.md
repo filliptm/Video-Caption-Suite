@@ -6,7 +6,7 @@ This file provides guidelines for AI assistants (Claude, GPT, etc.) working on t
 
 Video Caption Suite is a video captioning application using the Qwen3-VL-8B vision-language model. It consists of:
 
-- **Backend**: Python/FastAPI server (`backend/`, `model_loader.py`, `video_processor.py`, `config.py`)
+- **Backend**: Python/FastAPI server (`backend/`)
 - **Frontend**: Vue 3/TypeScript application (`frontend/src/`)
 - **Documentation**: Comprehensive docs (`documentation/`)
 
@@ -49,9 +49,9 @@ Before completing any task, verify:
 | Processing | `backend/processing.py` | ProcessingManager, multi-GPU |
 | Analytics | `backend/analytics.py` | Word frequency, n-grams, correlations |
 | Resource Monitor | `backend/resource_monitor.py` | ResourceMonitor, CPU/RAM/GPU metrics |
-| Model Loading | `model_loader.py` | load_model, generate_caption, clear_cache |
-| Video Processing | `video_processor.py` | extract_frames, process_video |
-| Configuration | `config.py` | All defaults |
+| Model Loading | `backend/model_loader.py` | load_model, generate_caption, clear_cache |
+| Video Processing | `backend/video_processor.py` | extract_frames, process_video |
+| Configuration | `backend/config.py` | All defaults |
 
 ### Frontend
 
@@ -127,7 +127,7 @@ export const useMyStore = defineStore('my', {
 ### Adding a New Setting
 
 1. Add to `backend/schemas.py` (Settings class)
-2. Add default to `config.py`
+2. Add default to `backend/config.py`
 3. Add to `frontend/src/types/settings.ts`
 4. Add UI in appropriate settings component
 5. Update `documentation/CONFIGURATION.md`
@@ -145,7 +145,7 @@ Memory management is critical. When modifying model loading/unloading:
 
 1. Clear all references before `gc.collect()`
 2. Call `torch.cuda.synchronize()` before `empty_cache()`
-3. Update `clear_cache()` in `model_loader.py`
+3. Update `clear_cache()` in `backend/model_loader.py`
 4. Update `unload_model()` in `backend/processing.py`
 
 ## Testing Requirements
@@ -154,7 +154,7 @@ Before marking a task complete:
 
 ```bash
 # Backend syntax check
-python -m py_compile backend/api.py backend/processing.py model_loader.py
+python -m py_compile backend/api.py backend/processing.py backend/model_loader.py
 
 # Frontend build check
 cd frontend && npm run build:check

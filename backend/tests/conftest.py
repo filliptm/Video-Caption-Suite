@@ -21,7 +21,7 @@ def mock_config():
     mock_config.OUTPUT_EXTENSION = ".txt"
     mock_config.VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov"}
 
-    with patch.dict('sys.modules', {'config': mock_config}):
+    with patch.dict('sys.modules', {'backend.config': mock_config}):
         yield mock_config
 
 

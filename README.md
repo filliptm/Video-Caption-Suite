@@ -48,7 +48,7 @@ Open http://localhost:8000 in your browser.
 
 ## Configuration
 
-Edit `config.py` to adjust:
+Edit `backend/config.py` to adjust:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
@@ -72,10 +72,9 @@ The batch size slider appears in Settings → Optimization only when multiple GP
 
 ```
 Video Caption Suite/
-├── backend/          # FastAPI server
+├── backend/          # FastAPI server (includes config, model loader, video processor)
 ├── frontend/         # Vue 3 UI
 ├── models/           # Downloaded model cache
-├── config.py         # Settings
 ├── install.bat/sh    # Installation
 └── start.bat/sh      # Launch server
 ```

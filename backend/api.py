@@ -6,7 +6,6 @@ Provides REST API and WebSocket for real-time progress
 import asyncio
 import json
 import os
-import sys
 from pathlib import Path
 from typing import List, Set
 from datetime import datetime
@@ -21,10 +20,7 @@ import subprocess
 import io
 from concurrent.futures import ThreadPoolExecutor
 
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-import config
+from backend import config
 from backend.schemas import (
     Settings, SettingsUpdate, ProgressUpdate, VideoInfo, VideoListResponse,
     CaptionInfo, CaptionListResponse, ProcessingRequest, ProcessingResponse,
@@ -39,7 +35,7 @@ from backend.schemas import (
 )
 from backend.gpu_utils import get_system_info
 from backend.processing import ProcessingManager
-from video_processor import find_videos, find_images, find_all_media, get_video_info
+from backend.video_processor import find_videos, find_images, find_all_media, get_video_info
 
 
 # Settings file path

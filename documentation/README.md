@@ -95,6 +95,9 @@ Video Caption Suite/
 │   ├── api.py              # FastAPI server (962 lines)
 │   ├── schemas.py          # Pydantic models
 │   ├── processing.py       # Processing orchestration
+│   ├── config.py           # Backend configuration
+│   ├── model_loader.py     # Model lifecycle management
+│   ├── video_processor.py  # Video/image processing
 │   └── gpu_utils.py        # GPU detection
 ├── frontend/
 │   ├── src/
@@ -104,9 +107,6 @@ Video Caption Suite/
 │   │   ├── composables/    # Reusable logic
 │   │   └── types/          # TypeScript definitions
 │   └── package.json
-├── config.py               # Backend configuration
-├── model_loader.py         # Model lifecycle management
-├── video_processor.py      # Video/image processing
 ├── requirements.txt        # Python dependencies
 ├── documentation/          # This documentation
 └── CLAUDE.md              # AI assistant guidelines

@@ -11,7 +11,7 @@ from typing import Optional
 # PATHS
 # =============================================================================
 
-PROJECT_ROOT = Path(__file__).parent
+PROJECT_ROOT = Path(__file__).parent.parent
 MODELS_DIR = PROJECT_ROOT / "models"
 USER_CONFIG_FILE = PROJECT_ROOT / "user_config.json"
 

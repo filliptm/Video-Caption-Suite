@@ -6,7 +6,7 @@ Complete reference for all configuration options in Video Caption Suite.
 
 | File | Purpose |
 |------|---------|
-| `config.py` | Backend Python settings |
+| `backend/config.py` | Backend Python settings |
 | `user_config.json` | User working directory and preferences (auto-generated, persisted) |
 | `settings.json` | Persisted user settings (auto-generated) |
 | `prompts.json` | Saved prompt library (auto-generated) |
@@ -15,9 +15,9 @@ Complete reference for all configuration options in Video Caption Suite.
 
 ---
 
-## Backend Configuration (config.py)
+## Backend Configuration (backend/config.py)
 
-**File:** `config.py`
+**File:** `backend/config.py`
 
 ### Model Settings
 

@@ -114,6 +114,9 @@ Video Caption Suite/
 │   ├── api.py              # FastAPI application
 │   ├── schemas.py          # Pydantic models
 │   ├── processing.py       # Processing manager
+│   ├── config.py           # Backend configuration
+│   ├── model_loader.py     # Model management
+│   ├── video_processor.py  # Video processing
 │   ├── gpu_utils.py        # GPU utilities
 │   └── tests/              # Backend tests
 │       ├── conftest.py
@@ -136,9 +139,6 @@ Video Caption Suite/
 │   └── tailwind.config.js  # Tailwind config
 ├── documentation/          # This documentation
 ├── models/                 # Downloaded models (git-ignored)
-├── config.py               # Backend config
-├── model_loader.py         # Model management
-├── video_processor.py      # Video processing
 ├── requirements.txt        # Python dependencies
 ├── start.bat              # Windows start script
 ├── CLAUDE.md              # AI assistant guidelines
@@ -330,7 +330,7 @@ describe('BaseButton', () => {
        my_setting: int = Field(default=10, ge=1, le=100)
    ```
 
-2. **Update config** (`config.py`):
+2. **Update config** (`backend/config.py`):
    ```python
    MY_SETTING = 10
    ```

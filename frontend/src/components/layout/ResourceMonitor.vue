@@ -73,7 +73,7 @@ function utilizationTextColor(percent: number): string {
           </svg>
           <span class="font-mono" :class="utilizationTextColor(cpuPercent)">{{ cpuPercent }}%</span>
         </div>
-        <div class="w-14 h-1 bg-dark-700 rounded-full overflow-hidden">
+        <div class="w-28 h-1 bg-dark-700 rounded-full overflow-hidden">
           <div
             class="h-full rounded-full transition-all duration-500"
             :class="utilizationColor(cpuPercent)"
@@ -91,7 +91,7 @@ function utilizationTextColor(percent: number): string {
           </svg>
           <span class="font-mono text-dark-400">{{ ramDisplay }}</span>
         </div>
-        <div class="w-14 h-1 bg-dark-700 rounded-full overflow-hidden">
+        <div class="w-28 h-1 bg-dark-700 rounded-full overflow-hidden">
           <div
             class="h-full rounded-full transition-all duration-500"
             :class="utilizationColor(ramPercent)"
@@ -108,7 +108,7 @@ function utilizationTextColor(percent: number): string {
             <span class="text-dark-500">GPU</span>
             <span class="font-mono" :class="utilizationTextColor(gpuUtilPercent)">{{ gpuUtilPercent }}%</span>
           </div>
-          <div class="w-14 h-1 bg-dark-700 rounded-full overflow-hidden">
+          <div class="w-28 h-1 bg-dark-700 rounded-full overflow-hidden">
             <div
               class="h-full rounded-full transition-all duration-500"
               :class="utilizationColor(gpuUtilPercent)"
@@ -123,7 +123,7 @@ function utilizationTextColor(percent: number): string {
             <span class="text-dark-500">VRAM</span>
             <span class="font-mono text-dark-400">{{ vramDisplay }}</span>
           </div>
-          <div class="w-14 h-1 bg-dark-700 rounded-full overflow-hidden">
+          <div class="w-28 h-1 bg-dark-700 rounded-full overflow-hidden">
             <div
               class="h-full rounded-full transition-all duration-500"
               :class="utilizationColor(vramPercent)"

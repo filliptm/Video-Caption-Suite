@@ -138,7 +138,7 @@ onUnmounted(() => {
 <template>
   <div
     :class="[
-      'video-tile group relative h-full rounded-lg overflow-hidden cursor-pointer transition-all duration-150 flex flex-col',
+      'video-tile group relative h-full overflow-hidden cursor-pointer transition-all duration-150 flex flex-col',
       selected
         ? 'ring-2 ring-primary-500/30'
         : '',

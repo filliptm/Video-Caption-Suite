@@ -42,7 +42,7 @@ const formattedDuration = computed(() => {
 <template>
   <div
     :class="[
-      'group relative p-3 rounded-lg transition-all cursor-pointer',
+      'group relative p-3 transition-all cursor-pointer',
       selected
         ? 'bg-primary-900/30'
         : 'bg-dark-800',

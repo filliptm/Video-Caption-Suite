@@ -142,7 +142,7 @@ onUnmounted(() => {
       selected
         ? 'ring-2 ring-primary-500/30'
         : '',
-      processing && 'ring-2 ring-primary-400/50 animate-pulse',
+      processing && 'ring-2 ring-primary-400/50',
     ]"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
@@ -262,25 +262,27 @@ onUnmounted(() => {
         </div>
       </button>
 
-      <!-- Status indicator -->
-      <div class="absolute top-1.5 right-1.5 z-10">
+      <!-- Status indicator (small badge, non-processing states) -->
+      <div v-if="!processing && video.has_caption" class="absolute top-1.5 right-1.5 z-10">
         <div
-          v-if="processing"
-          class="w-5 h-5 rounded-full bg-primary-500/90 flex items-center justify-center shadow-sm"
-        >
-          <svg class="w-3 h-3 text-white animate-spin" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
-        </div>
-        <div
-          v-else-if="video.has_caption"
           class="w-5 h-5 rounded-full bg-green-500/90 flex items-center justify-center shadow-sm"
         >
           <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
           </svg>
         </div>
+      </div>
+
+      <!-- Full-tile processing overlay -->
+      <div
+        v-if="processing"
+        class="absolute inset-0 z-30 bg-dark-900/70 flex flex-col items-center justify-center gap-2"
+      >
+        <svg class="w-8 h-8 text-primary-400 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" />
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        </svg>
+        <span class="text-xs font-medium text-primary-300">Processing...</span>
       </div>
     </div>
 

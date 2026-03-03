@@ -218,7 +218,7 @@ def load_model(
     print("\n[Model Loader] Step 3/4: Loading model weights...")
     print("[Model Loader] This may take 30-60 seconds...")
 
-    from transformers import AutoModelForVision2Seq, AutoProcessor
+    from transformers import AutoModelForImageTextToText, AutoProcessor
 
     load_start = time.time()
     torch_dtype = get_dtype(dtype)
@@ -228,7 +228,7 @@ def load_model(
     # If SageAttention is enabled, we use SDPA (which is now monkey-patched)
     attn_impl = "sdpa" if sage_enabled else "sdpa"
 
-    model = AutoModelForVision2Seq.from_pretrained(
+    model = AutoModelForImageTextToText.from_pretrained(
         str(model_path),
         torch_dtype=torch_dtype,
         trust_remote_code=True,

@@ -35,6 +35,7 @@ class ProcessingSubstage(str, Enum):
 
 class Settings(BaseModel):
     """Configuration settings for the captioner"""
+    model_preset: str = "qwen3-vl-8b"
     model_id: str = "Qwen/Qwen3-VL-8B-Instruct"
     device: DeviceType = DeviceType.CUDA
     dtype: DtypeType = DtypeType.BFLOAT16
@@ -46,6 +47,9 @@ class Settings(BaseModel):
     use_torch_compile: bool = True
     include_metadata: bool = False
     batch_size: int = Field(default=1, ge=1, le=8)
+    # Gemma 4 specific — ignored by other presets.
+    vision_token_budget: Optional[int] = None  # 70/140/280/560/1120
+    enable_thinking: Optional[bool] = None
     prompt: str = """Describe this video in detail. Include:
 - The main subject and their actions
 - The setting and environment
@@ -56,6 +60,7 @@ class Settings(BaseModel):
 
 class SettingsUpdate(BaseModel):
     """Partial settings update"""
+    model_preset: Optional[str] = None
     model_id: Optional[str] = None
     device: Optional[DeviceType] = None
     dtype: Optional[DtypeType] = None
@@ -67,6 +72,8 @@ class SettingsUpdate(BaseModel):
     use_torch_compile: Optional[bool] = None
     include_metadata: Optional[bool] = None
     batch_size: Optional[int] = Field(default=None, ge=1, le=8)
+    vision_token_budget: Optional[int] = None
+    enable_thinking: Optional[bool] = None
     prompt: Optional[str] = None
 
 
@@ -159,10 +166,33 @@ class ModelStatus(BaseModel):
     """Current model status"""
     loaded: bool = False
     model_id: Optional[str] = None
+    preset_id: Optional[str] = None
     device: Optional[str] = None
     vram_used_gb: float = 0.0
     sage_attention_active: bool = False
     torch_compiled: bool = False
+
+
+class ModelPresetInfo(BaseModel):
+    """Public metadata for a single model preset (dropdown entry)"""
+    id: str
+    model_id: str
+    label: str
+    description: str
+    approx_vram_gb: int
+    default_max_frames: int
+    default_frame_size: int
+    supports_multi_gpu_shard: bool
+    quantization: Optional[str] = None
+    supports_sage_attention: bool
+    supports_torch_compile: bool
+    is_video_native: bool
+
+
+class ModelPresetListResponse(BaseModel):
+    """Response for GET /api/model-presets"""
+    presets: List[ModelPresetInfo]
+    default_preset_id: str
 
 
 class ErrorResponse(BaseModel):

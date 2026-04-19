@@ -2,7 +2,7 @@
 
 ## Overview
 
-Video Caption Suite is a professional-grade media captioning application that uses the **Qwen3-VL-8B** vision-language model to automatically generate detailed text descriptions for **videos and images**. It features a modern web interface, real-time progress tracking, multi-GPU support, and comprehensive optimization features.
+Video Caption Suite is a professional-grade media captioning application that uses vision-language models to automatically generate detailed text descriptions for **videos and images**. It ships with a pluggable model-preset system; current presets include **Qwen3-VL-8B** (default, ~16 GB VRAM) and **Gemma 4 26B-A4B** (video-native MoE, available in bf16 full and int4-quantized flavors). It features a modern web interface, real-time progress tracking, multi-GPU support, and comprehensive optimization features.
 
 ## Table of Contents
 

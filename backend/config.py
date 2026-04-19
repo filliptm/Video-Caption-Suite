@@ -138,7 +138,10 @@ _load_user_config()
 # MODEL SETTINGS
 # =============================================================================
 
-# HuggingFace model ID
+# Default preset id (see backend/model_presets.py). The frontend model
+# dropdown is populated from that registry; MODEL_ID is kept as the resolved
+# HF repo id for scripts that load the loader directly.
+DEFAULT_PRESET_ID = "qwen3-vl-8b"
 MODEL_ID = "Qwen/Qwen3-VL-8B-Instruct"
 
 # Device: "cuda", "cpu", or "auto"

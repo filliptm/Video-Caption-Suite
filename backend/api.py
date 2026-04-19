@@ -27,11 +27,15 @@ from backend.schemas import (
     ModelStatus, ErrorResponse, ProcessingStage, GPUInfoResponse,
     SavedPrompt, PromptLibrary, CreatePromptRequest, UpdatePromptRequest,
     DirectoryRequest, DirectoryResponse, DirectoryBrowseResponse, MediaType,
+    ModelPresetInfo, ModelPresetListResponse,
     # Analytics schemas
     StopwordPreset, WordFrequencyRequest, WordFrequencyResponse, WordFrequencyItem,
     NgramRequest, NgramResponse, NgramItem,
     CorrelationRequest, CorrelationResponse, CorrelationItem,
     AnalyticsSummary,
+)
+from backend.model_presets import (
+    MODEL_PRESETS, DEFAULT_PRESET, list_presets_public, get_preset,
 )
 from backend.gpu_utils import get_system_info
 from backend.processing import ProcessingManager
@@ -177,12 +181,30 @@ async def get_settings():
 
 @app.post("/api/settings", response_model=Settings)
 async def update_settings(update: SettingsUpdate):
-    """Update settings (partial update supported)"""
+    """Update settings (partial update supported).
+
+    If `model_preset` changes, we resync `model_id` and any preset-enforced
+    flags (sage/compile support, multi-GPU shard → batch_size=1) so that a
+    preset switch is a single action in the UI.
+    """
     global _settings
 
     update_data = update.model_dump(exclude_unset=True)
     current_data = _settings.model_dump()
     current_data.update(update_data)
+
+    # Preset change → resync derived fields.
+    if "model_preset" in update_data:
+        preset = get_preset(update_data["model_preset"])
+        if preset is not None:
+            current_data["model_id"] = preset["model_id"]
+            if not preset["supports_sage_attention"]:
+                current_data["use_sage_attention"] = False
+            if not preset["supports_torch_compile"]:
+                current_data["use_torch_compile"] = False
+            if preset["supports_multi_gpu_shard"]:
+                current_data["batch_size"] = 1
+
     _settings = Settings(**current_data)
     save_settings(_settings)
 
@@ -196,6 +218,15 @@ async def reset_settings():
     _settings = Settings()
     save_settings(_settings)
     return _settings
+
+
+@app.get("/api/model-presets", response_model=ModelPresetListResponse)
+async def get_model_presets():
+    """List available model presets for the UI dropdown."""
+    return ModelPresetListResponse(
+        presets=[ModelPresetInfo(**p) for p in list_presets_public()],
+        default_preset_id=DEFAULT_PRESET,
+    )
 
 
 # ============================================================================

@@ -431,7 +431,11 @@ gc.collect()
 2. Try HuggingFace mirror
 3. Download manually:
    ```bash
+   # Default preset
    huggingface-cli download Qwen/Qwen3-VL-8B-Instruct --local-dir models/Qwen3-VL-8B-Instruct
+
+   # Gemma 4 preset (~50GB; int4 preset uses same weights but quantizes on load)
+   huggingface-cli download google/gemma-4-26B-A4B-it --local-dir models/gemma-4-26B-A4B-it
    ```
 
 ### WebSocket Disconnects

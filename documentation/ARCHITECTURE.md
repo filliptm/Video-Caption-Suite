@@ -202,8 +202,13 @@ processing.py
 
 model_loader.py
   ├── config.py
-  ├── torch, transformers (external)
+  ├── model_presets.py (MODEL_PRESETS, resolve_preset)
+  ├── torch, transformers (external; AutoModelForImageTextToText, Gemma4ForConditionalGeneration)
+  ├── torchao (optional; int4 quantization for Gemma 4)
   └── sageattention (optional)
+
+model_presets.py
+  └── (pure registry; no runtime dependencies)
 
 video_processor.py
   ├── config.py
@@ -302,6 +307,22 @@ Composables:
 - CUDA synchronization before `empty_cache()`
 - Clear all references before cache cleanup
 
+### 7. Model Preset Registry
+- `backend/model_presets.py` is the single source of truth for every supported
+  model: loader strategy, frame content-block format, quantization, capability
+  flags (SageAttention, torch.compile, multi-GPU sharding), and recommended
+  defaults. Adding a model is a new dict entry, not a new `if` branch.
+- `backend/model_loader.py` is a thin dispatcher over two strategies:
+  `image_text_to_text` (Qwen-VL family, one image block per frame) and
+  `gemma4` (single video block, optional TorchAo int4, optional
+  `device_map="auto"` sharding).
+- The settings POST handler in `backend/api.py` syncs `model_id` and enforces
+  preset-declared capability flags whenever `model_preset` changes — a UI
+  preset switch is a single action.
+- The free-text Model ID field is still accepted: if the user supplies a
+  custom `model_id` that does not match any preset, the default preset's
+  loader strategy is reused with the custom id substituted.
+
 ## File Locations and Line References
 
 | Component | File | Key Lines |
@@ -314,9 +335,11 @@ Composables:
 | Processing endpoints | `backend/api.py` | 800-900 |
 | ProcessingManager | `backend/processing.py` | 85-250 |
 | Parallel processing | `backend/processing.py` | 264-464 |
-| Model loading | `backend/model_loader.py` | 158-295 |
-| Caption generation | `backend/model_loader.py` | 298-407 |
-| Memory cleanup | `backend/model_loader.py` | 410-444 |
+| Model preset registry | `backend/model_presets.py` | Full file |
+| Model loading (dispatcher) | `backend/model_loader.py` | `load_model()` |
+| Image-text-to-text strategy | `backend/model_loader.py` | `_load_image_text_to_text`, `_generate_image_text_to_text` |
+| Gemma 4 strategy | `backend/model_loader.py` | `_load_gemma4`, `_generate_gemma4` |
+| Memory cleanup | `backend/model_loader.py` | `clear_cache()` |
 | Frame extraction | `backend/video_processor.py` | 80-150 |
 | Vue root component | `frontend/src/App.vue` | 1-464 |
 | Video store | `frontend/src/stores/videoStore.ts` | Full file |

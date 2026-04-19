@@ -29,6 +29,7 @@ Retrieve current application settings.
 **Response:**
 ```json
 {
+  "model_preset": "qwen3-vl-8b",
   "model_id": "Qwen/Qwen3-VL-8B-Instruct",
   "device": "cuda",
   "dtype": "bfloat16",
@@ -40,9 +41,16 @@ Retrieve current application settings.
   "include_metadata": false,
   "use_sage_attention": false,
   "use_torch_compile": true,
-  "batch_size": 1
+  "batch_size": 1,
+  "vision_token_budget": null,
+  "enable_thinking": null
 }
 ```
+
+Setting `model_preset` in a POST auto-syncs `model_id` and capability flags
+(SageAttention / torch.compile / batch_size) to what the preset supports.
+`vision_token_budget` and `enable_thinking` are Gemma-4 only; other presets
+ignore them. See `/api/model-presets` for the list of available presets.
 
 **File Reference:** `backend/api.py:650-670`
 
@@ -80,6 +88,51 @@ Update settings (partial update supported).
 ```
 
 **File Reference:** `backend/api.py:673-710`
+
+---
+
+### GET /api/model-presets
+
+List available model presets for the UI dropdown.
+
+**Response:**
+```json
+{
+  "presets": [
+    {
+      "id": "qwen3-vl-8b",
+      "model_id": "Qwen/Qwen3-VL-8B-Instruct",
+      "label": "Qwen3-VL 8B (default)",
+      "description": "Alibaba's 8B video-language model. Fast, proven, needs ~16GB VRAM.",
+      "approx_vram_gb": 16,
+      "default_max_frames": 16,
+      "default_frame_size": 336,
+      "supports_multi_gpu_shard": false,
+      "quantization": null,
+      "supports_sage_attention": false,
+      "supports_torch_compile": true,
+      "is_video_native": false
+    },
+    {
+      "id": "gemma-4-26b-a4b-int4",
+      "model_id": "google/gemma-4-26B-A4B-it",
+      "label": "Gemma 4 26B-A4B (video-native, int4)",
+      "description": "Same as above but int4-quantized via TorchAo. Needs ~15GB VRAM.",
+      "approx_vram_gb": 15,
+      "default_max_frames": 32,
+      "default_frame_size": 336,
+      "supports_multi_gpu_shard": false,
+      "quantization": "int4_torchao",
+      "supports_sage_attention": false,
+      "supports_torch_compile": false,
+      "is_video_native": true
+    }
+  ],
+  "default_preset_id": "qwen3-vl-8b"
+}
+```
+
+The source of truth for this list is `backend/model_presets.py:MODEL_PRESETS`.
 
 ---
 
@@ -562,6 +615,7 @@ Get current model loading status.
 {
   "loaded": true,
   "model_id": "Qwen/Qwen3-VL-8B-Instruct",
+  "preset_id": "qwen3-vl-8b",
   "device": "cuda:0",
   "devices_loaded": ["cuda:0", "cuda:1"],
   "vram_used_gb": 32.5,

@@ -2,6 +2,7 @@ export type DeviceType = 'cuda' | 'cpu'
 export type DtypeType = 'float16' | 'bfloat16' | 'float32'
 
 export interface Settings {
+  model_preset: string
   model_id: string
   device: DeviceType
   dtype: DtypeType
@@ -13,10 +14,13 @@ export interface Settings {
   use_torch_compile: boolean
   include_metadata: boolean
   batch_size: number
+  vision_token_budget?: number | null
+  enable_thinking?: boolean | null
   prompt: string
 }
 
 export interface SettingsUpdate {
+  model_preset?: string
   model_id?: string
   device?: DeviceType
   dtype?: DtypeType
@@ -28,10 +32,13 @@ export interface SettingsUpdate {
   use_torch_compile?: boolean
   include_metadata?: boolean
   batch_size?: number
+  vision_token_budget?: number | null
+  enable_thinking?: boolean | null
   prompt?: string
 }
 
 export const defaultSettings: Settings = {
+  model_preset: 'qwen3-vl-8b',
   model_id: 'Qwen/Qwen3-VL-8B-Instruct',
   device: 'cuda',
   dtype: 'bfloat16',
@@ -43,12 +50,35 @@ export const defaultSettings: Settings = {
   use_torch_compile: true,
   include_metadata: false,
   batch_size: 1,
+  vision_token_budget: null,
+  enable_thinking: null,
   prompt: `Describe this video in detail. Include:
 - The main subject and their actions
 - The setting and environment
 - Any notable objects or elements
 - The overall mood or atmosphere
 - Any text visible in the video`,
+}
+
+// Model preset metadata from GET /api/model-presets
+export interface ModelPresetInfo {
+  id: string
+  model_id: string
+  label: string
+  description: string
+  approx_vram_gb: number
+  default_max_frames: number
+  default_frame_size: number
+  supports_multi_gpu_shard: boolean
+  quantization: string | null
+  supports_sage_attention: boolean
+  supports_torch_compile: boolean
+  is_video_native: boolean
+}
+
+export interface ModelPresetListResponse {
+  presets: ModelPresetInfo[]
+  default_preset_id: string
 }
 
 // GPU info types

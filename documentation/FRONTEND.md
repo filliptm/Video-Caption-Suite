@@ -809,7 +809,8 @@ type DeviceType = 'cuda' | 'cpu'
 type DtypeType = 'float16' | 'bfloat16' | 'float32'
 
 interface Settings {
-  model_id: string
+  model_preset: string        // preset id (see GET /api/model-presets)
+  model_id: string            // resolved HF repo id (derived from preset)
   device: DeviceType
   dtype: DtypeType
   max_frames: number
@@ -821,6 +822,23 @@ interface Settings {
   use_sage_attention: boolean
   use_torch_compile: boolean
   batch_size: number
+  vision_token_budget?: number | null   // Gemma 4 only (70/140/280/560/1120)
+  enable_thinking?: boolean | null      // Gemma 4 only
+}
+
+interface ModelPresetInfo {
+  id: string
+  model_id: string
+  label: string
+  description: string
+  approx_vram_gb: number
+  default_max_frames: number
+  default_frame_size: number
+  supports_multi_gpu_shard: boolean
+  quantization: string | null
+  supports_sage_attention: boolean
+  supports_torch_compile: boolean
+  is_video_native: boolean
 }
 
 interface GPUInfo {

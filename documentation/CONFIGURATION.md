@@ -22,7 +22,10 @@ Complete reference for all configuration options in Video Caption Suite.
 ### Model Settings
 
 ```python
-# HuggingFace model identifier
+# Default preset id (see backend/model_presets.py)
+DEFAULT_PRESET_ID = "qwen3-vl-8b"
+
+# Resolved HuggingFace model identifier (kept for scripts using the loader directly)
 MODEL_ID = "Qwen/Qwen3-VL-8B-Instruct"
 
 # Compute device
@@ -34,9 +37,32 @@ DTYPE = "bfloat16"  # "float16", "bfloat16", or "float32"
 
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
-| `MODEL_ID` | str | `"Qwen/Qwen3-VL-8B-Instruct"` | HuggingFace model ID |
+| `DEFAULT_PRESET_ID` | str | `"qwen3-vl-8b"` | Preset id selected by default (see Model Presets below) |
+| `MODEL_ID` | str | `"Qwen/Qwen3-VL-8B-Instruct"` | Resolved HF repo id (derived from preset) |
 | `DEVICE` | str | `"cuda"` | `cuda` for GPU, `cpu` for CPU-only |
 | `DTYPE` | str | `"bfloat16"` | Model precision (affects VRAM usage) |
+
+### Model Presets
+
+Presets are declared in `backend/model_presets.py`. Each preset captures the
+model's loader strategy (`image_text_to_text` or `gemma4`), frame/content
+format, and per-model capability flags (SageAttention, torch.compile, multi-GPU
+sharding, quantization).
+
+| Preset id | Model | Approx VRAM | Notes |
+|-----------|-------|------------|-------|
+| `qwen3-vl-8b` | `Qwen/Qwen3-VL-8B-Instruct` | ~16 GB | Default. Single-GPU, `torch.compile` enabled. |
+| `gemma-4-26b-a4b` | `google/gemma-4-26B-A4B-it` | ~52 GB | MoE, video-native. Shards across multiple GPUs (batch_size forced to 1). |
+| `gemma-4-26b-a4b-int4` | `google/gemma-4-26B-A4B-it` | ~15 GB | Same model, int4 via TorchAo. Fits on a single 24 GB card. |
+
+To add a preset, append to `MODEL_PRESETS` in `backend/model_presets.py`.
+The loader chooses a strategy based on the preset's `loader` field:
+
+- `image_text_to_text` uses `transformers.AutoModelForImageTextToText`
+  and feeds one `{"type": "image"}` content block per frame.
+- `gemma4` uses `transformers.Gemma4ForConditionalGeneration`, optionally
+  with TorchAo int4 quantization, and feeds a single `{"type": "video"}`
+  content block carrying the frame list.
 
 ### Inference Settings
 

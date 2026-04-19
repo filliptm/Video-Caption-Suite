@@ -170,6 +170,7 @@ class ProcessingManager:
                         dtype=settings.dtype.value,
                         use_sage_attention=settings.use_sage_attention,
                         use_torch_compile=settings.use_torch_compile,
+                        preset_id=settings.model_preset,
                     )
                 )
 
@@ -231,6 +232,7 @@ class ProcessingManager:
                         dtype=settings.dtype.value,
                         use_sage_attention=settings.use_sage_attention,
                         use_torch_compile=settings.use_torch_compile,
+                        preset_id=settings.model_preset,
                     )
                 )
                 self.model_infos[device] = model_info
@@ -393,6 +395,7 @@ class ProcessingManager:
                             prompt=settings.prompt,
                             max_tokens=settings.max_tokens,
                             temperature=settings.temperature,
+                            video_fps=video_meta.get("fps"),
                         )
                     )
 
@@ -593,6 +596,7 @@ class ProcessingManager:
                             prompt=settings.prompt,
                             max_tokens=settings.max_tokens,
                             temperature=settings.temperature,
+                            video_fps=video_meta.get("fps"),
                         )
                     )
 
@@ -657,6 +661,7 @@ class ProcessingManager:
         return {
             "loaded": self.state.model_loaded,
             "model_id": self.model_info.get("model_id") if self.model_info else None,
+            "preset_id": self.model_info.get("preset_id") if self.model_info else None,
             "device": str(self.model_info.get("device")) if self.model_info else None,
             "devices_loaded": devices_loaded,
             "vram_used_gb": self.state.vram_used_gb,
